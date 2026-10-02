@@ -28,7 +28,7 @@ export function risk(table: QuantileTable, weeks: number, stock: number): Probab
   if (weeks <= 0) return { value: 0, bound: 'below' };
   const points = probabilities.map(p => ({ p: Number(p), value: quantile(table, weeks, Number(p)) }));
   let index = -1;
-  for (let i = 0; i < points.length; i++) if (points[i] && points[i].value <= stock) index = i;
+  for (let i = 0; i < points.length; i++) if ((points[i]?.value ?? Infinity) <= stock) index = i;
   if (index < 0) return { value: 0.95, bound: 'above' };
   if (index === points.length - 1) return { value: 0.01, bound: 'below' };
   const a = points[index], b = points[index + 1];
