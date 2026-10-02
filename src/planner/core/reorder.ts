@@ -6,7 +6,10 @@ export interface Probability { value: number; bound: 'below' | 'above' | null }
 export interface ReorderResult { orderUpTo: number; safetyStock: number; orderQty: number; cashInr: number; leadTimeRisk: Probability; coverRisk: Probability; expectedLeft: number; orderBy: { kind: 'now' } | { kind: 'week'; weeksFromOrigin: number } | { kind: 'not-needed'; withinWeeks: number } }
 export function normalise(table: QuantileTable): QuantileTable {
   const result = {} as QuantileTable;
-  for (const key of probabilities) result[key] = table[key].map((value, i) => Math.max(0, value, i > 0 ? result[key][i - 1] : 0));
+  for (const key of probabilities) {
+    result[key] = [];
+    table[key].forEach((value, i) => { result[key][i] = Math.max(0, value, i > 0 ? result[key][i - 1] : 0); });
+  }
   for (let h = 0; h < result['0.50'].length; h++) for (let p = 1; p < probabilities.length; p++) result[probabilities[p]][h] = Math.max(result[probabilities[p]][h], result[probabilities[p - 1]][h]);
   return result;
 }
