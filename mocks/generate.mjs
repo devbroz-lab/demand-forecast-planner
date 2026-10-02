@@ -23,7 +23,7 @@ for(let i=0;i<products.length;i++){
  const backtestWeeks=historyWeeks.slice(-52);
  const blocks=origins.map((origin,oi)=>{
   const make=(promo)=>{const arr=Array.from({length:26},(_,w)=>demand(add(origin,w),promo)*(1+Math.sin(w*1.3+oi+i)*.026));
-   const weekly={p10:arr.map((n,w)=>Math.round(n*(.77-w*.002)),p50:arr.map(Math.round),p90:arr.map((n,w)=>Math.round(n*(1.23+w*.002)))};
+   const weekly={p10:arr.map((n,w)=>Math.round(n*(.77-w*.002))),p50:arr.map(Math.round),p90:arr.map((n,w)=>Math.round(n*(1.23+w*.002)))};
    const cum_q=Object.fromEntries(keys.map((key,k)=>[key,arr.map((_,h)=>Math.round(arr.slice(0,h+1).reduce((a,b)=>a+b,0)*(1+(probs[k]-.5)*(.25+.07*Math.sqrt(h+1)))))]));
    return {weekly,cum_q}; };
   return {origin,scenarios:Object.fromEntries((oi===10?[0,10,20,30]:[0]).map(v=>[`promo_${v}`,make(v)])),baseline_p50:Array.from({length:26},(_,w)=>Math.round(baseDemand*(1+.04*Math.sin(w)))),drivers:{Trend:65,Seasonality:115,Festival:p.archetype==='festival'?620:90,'Promotion / price':0,Momentum:-38},state:{on_hand:oi===10?1800:2100,on_order:oi===10?900:700},naive_order:4200};
