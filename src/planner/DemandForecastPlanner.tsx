@@ -37,6 +37,7 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,strings
  const [drawer,setDrawer] = useState(false);
  const [tourStep,setTourStep] = useState<number|null>(null);
  const [tourStarted,setTourStarted] = useState(false);
+ const [tourPlacement,setTourPlacement] = useState<'top-left'|'top-right'|'bottom-left'|'bottom-right'>('bottom-right');
  const tourDialog=useRef<HTMLDivElement>(null);
  const tourTrigger=useRef<HTMLButtonElement>(null);
  const [retryKey,setRetryKey] = useState(0); const [skuRetry,setSkuRetry] = useState(0);
@@ -55,7 +56,39 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,strings
  const chooseSku=(sku:string)=>{change('sku',sku);emit({name:'sku_selected',skuId:sku});};
  const closeTour=()=>{setTourStep(null);setDrawer(false);tourTrigger.current?.focus();};
  useEffect(()=>{if(!loading && shell && skuData && !tourStarted){setTourStarted(true);setTourStep(0);}},[loading,shell,skuData,tourStarted]);
- useEffect(()=>{if(tourStep===null)return;const isMobile=window.matchMedia('(max-width:767px)').matches;setDrawer(false);const timer=window.setTimeout(()=>{const id=tourSteps[tourStep]?.id;const target=isMobile&&(id==='selection'||id==='scenarios')?document.querySelector('[data-tour-target="mobile-controls"]'):document.querySelector(`[data-tour-target="${id}"]`);if(!isMobile||id!=='selection'&&id!=='scenarios')target?.scrollIntoView({behavior:'smooth',block:'center'});tourDialog.current?.focus();},180);return()=>window.clearTimeout(timer);},[tourStep,tourSteps]);
+ useEffect(()=>{
+  if(tourStep===null)return;
+  const isMobile=window.matchMedia('(max-width:767px)').matches;
+  const id=tourSteps[tourStep]?.id;
+  setDrawer(false);
+  const targetSelector=isMobile&&(id==='selection'||id==='scenarios')?'[data-tour-target="mobile-controls"]':`[data-tour-target="${id}"]`;
+  const placeDialog=()=>{
+   const target=document.querySelector<HTMLElement>(targetSelector)?.getBoundingClientRect();
+   const dialog=tourDialog.current?.getBoundingClientRect();
+   if(!target||!dialog)return;
+   const gutter=isMobile?16:24;
+   const bottomGutter=isMobile?82:24;
+   const width=dialog.width,height=dialog.height;
+   const options=['bottom-right','bottom-left','top-right','top-left'] as const;
+   const overlap=(placement:typeof options[number])=>{
+    const left=placement.endsWith('right')?window.innerWidth-gutter-width:gutter;
+    const top=placement.startsWith('bottom')?window.innerHeight-bottomGutter-height:gutter;
+    return Math.max(0,Math.min(left+width,target.right)-Math.max(left,target.left)) *
+     Math.max(0,Math.min(top+height,target.bottom)-Math.max(top,target.top));
+   };
+   setTourPlacement(options.reduce((best,option)=>overlap(option)<overlap(best)?option:best,options[0]));
+  };
+  const timer=window.setTimeout(()=>{
+   const target=document.querySelector<HTMLElement>(targetSelector);
+   if(!isMobile||id!=='selection'&&id!=='scenarios')target?.scrollIntoView({behavior:'smooth',block:'center'});
+   tourDialog.current?.focus();
+   placeDialog();
+  },180);
+  const settled=window.setTimeout(placeDialog,650);
+  window.addEventListener('scroll',placeDialog,{passive:true});
+  window.addEventListener('resize',placeDialog);
+  return()=>{window.clearTimeout(timer);window.clearTimeout(settled);window.removeEventListener('scroll',placeDialog);window.removeEventListener('resize',placeDialog)};
+ },[tourStep,tourSteps]);
  useEffect(()=>{if(tourStep===null)return;const onKey=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();closeTour();}if(e.key==='Tab'){const buttons=tourDialog.current?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');if(!buttons?.length)return;const first=buttons[0],last=buttons[buttons.length-1];if(e.shiftKey && (document.activeElement===first || document.activeElement===tourDialog.current)){e.preventDefault();last?.focus();}else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}}};document.addEventListener('keydown',onKey);return()=>document.removeEventListener('keydown',onKey);},[tourStep]);
  const highlight=(id:string)=>tourStep!==null&&tourSteps[tourStep]?.id===id?s['tourHighlight']:'';
  const chartData=useMemo(()=>{
@@ -153,6 +186,6 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,strings
    <footer id="contact" className={s['footer']}><span>{t.brand} <span className={s['brandDot']}>·</span> {t.edition}</span><a href={ctaHref} onClick={()=>emit({name:'cta_clicked'})}>{t.cta} <ArrowUpRight size={13}/></a></footer>
    <div className={s['mobileBar']}><Button data-tour-target="mobile-controls" className={tourStep!==null&&(tourSteps[tourStep]?.id==='selection'||tourSteps[tourStep]?.id==='scenarios')?s['tourHighlight']:''} variant="outline" onClick={()=>setDrawer(true)}><SlidersHorizontal size={17}/> Controls</Button><Button variant="outline" onClick={()=>setTourStep(0)}><CircleHelp size={16}/> Tour</Button></div>
    {drawer&&<div className={s['drawerBackdrop']} onClick={()=>setDrawer(false)}><div className={s['drawer']} role="dialog" aria-modal={tourStep===null} aria-label="Planner controls" onClick={e=>e.stopPropagation()}><div className={s['drawerHead']}><h2>Planner controls</h2><Button variant="ghost" size="icon" aria-label="Close controls" onClick={()=>setDrawer(false)}><X size={20}/></Button></div>{controls}<div data-tour-target="scenarios" className={`${s['drawerMore']} ${highlight('scenarios')}`}>{scenarios}</div><Button className={s['drawerDone']} onClick={()=>setDrawer(false)}>Done</Button></div></div>}
-   {tourStep!==null&&<div className={s['tourOverlay']} role="presentation"><div className={s['tourShade']} onClick={closeTour}/><div ref={tourDialog} className={s['tourDialog']} role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description" tabIndex={-1}><div className={s['tourTop']}><span>WORKSPACE TOUR · {tourStep+1} / {tourSteps.length}</span><Button variant="ghost" size="icon" aria-label="Close tour" onClick={closeTour}><X size={17}/></Button></div><h2 id="tour-title">{tourSteps[tourStep]?.title}</h2><p id="tour-description">{tourSteps[tourStep]?.body}</p><div className={s['tourProgress']}>{tourSteps.map((step,i)=><i key={step.id} className={i<=tourStep?s['tourProgressActive']:''}/>)}</div><div className={s['tourActions']}><Button variant="ghost" onClick={closeTour}>Skip tour</Button><div><Button variant="outline" disabled={tourStep===0} onClick={()=>setTourStep(step=>step===null?step:Math.max(0,step-1))}>Back</Button><Button onClick={()=>tourStep===tourSteps.length-1?closeTour():setTourStep(step=>step===null?step:step+1)}>{tourStep===tourSteps.length-1?'Finish':'Next'}</Button></div></div></div></div>}
+   {tourStep!==null&&<div className={s['tourOverlay']} role="presentation"><div className={s['tourShade']} onClick={closeTour}/><div ref={tourDialog} className={`${s['tourDialog']} ${tourPlacement.startsWith('top')?s['tourDialogTop']:''} ${tourPlacement.endsWith('left')?s['tourDialogLeft']:''}`} role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description" tabIndex={-1}><div className={s['tourTop']}><span>WORKSPACE TOUR · {tourStep+1} / {tourSteps.length}</span><Button variant="ghost" size="icon" aria-label="Close tour" onClick={closeTour}><X size={17}/></Button></div><h2 id="tour-title">{tourSteps[tourStep]?.title}</h2><p id="tour-description">{tourSteps[tourStep]?.body}</p><div className={s['tourProgress']}>{tourSteps.map((step,i)=><i key={step.id} className={i<=tourStep?s['tourProgressActive']:''}/>)}</div><div className={s['tourActions']}><Button variant="ghost" onClick={closeTour}>Skip tour</Button><div><Button variant="outline" disabled={tourStep===0} onClick={()=>setTourStep(step=>step===null?step:Math.max(0,step-1))}>Back</Button><Button onClick={()=>tourStep===tourSteps.length-1?closeTour():setTourStep(step=>step===null?step:step+1)}>{tourStep===tourSteps.length-1?'Finish':'Next'}</Button></div></div></div></div>}
   </div>;
 }
