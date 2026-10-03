@@ -1,9 +1,9 @@
 export type QuantileKey = '0.05' | '0.10' | '0.25' | '0.50' | '0.75' | '0.90' | '0.95' | '0.99';
 export type QuantileTable = Record<QuantileKey, number[]>;
 export const probabilities: readonly QuantileKey[] = ['0.05', '0.10', '0.25', '0.50', '0.75', '0.90', '0.95', '0.99'];
-export interface ReorderInput { cumQ: QuantileTable; leadTimeWeeks: number; reviewWeeks: 1; serviceLevel: 0.9 | 0.95 | 0.99; onHand: number; onOrder: number; casePack: number; moq: number; unitCostInr: number; roundMoqToCases?: boolean }
+export interface ReorderInput { cumQ: QuantileTable; leadTimeWeeks: number; reviewWeeks: 1; serviceLevel: 0.9 | 0.95 | 0.99; onHand: number; onOrder: number; casePack: number; moq: number; unitCost: number; roundMoqToCases?: boolean }
 export interface Probability { value: number; bound: 'below' | 'above' | null }
-export interface ReorderResult { orderUpTo: number; safetyStock: number; orderQty: number; cashInr: number; leadTimeRisk: Probability; coverRisk: Probability; expectedLeft: number; orderBy: { kind: 'now' } | { kind: 'week'; weeksFromOrigin: number } | { kind: 'not-needed'; withinWeeks: number } }
+export interface ReorderResult { orderUpTo: number; safetyStock: number; orderQty: number; cash: number; leadTimeRisk: Probability; coverRisk: Probability; expectedLeft: number; orderBy: { kind: 'now' } | { kind: 'week'; weeksFromOrigin: number } | { kind: 'not-needed'; withinWeeks: number } }
 export function normalise(table: QuantileTable): QuantileTable {
   const result = {} as QuantileTable;
   for (const key of probabilities) {
@@ -52,5 +52,5 @@ export function recommendOrder(input: ReorderInput): ReorderResult {
     if (position - quantile(table, t + input.leadTimeWeeks, 0.5) >= safetyStock) orderBy = t === maxT ? { kind: 'not-needed', withinWeeks: maxT } : { kind: 'week', weeksFromOrigin: t };
     else break;
   }
-  return { orderUpTo, safetyStock, orderQty, cashInr: orderQty * input.unitCostInr, leadTimeRisk: risk(table, input.leadTimeWeeks, position), coverRisk: risk(table, weeks, position + orderQty), expectedLeft: Math.round(position + orderQty - quantile(table, weeks, 0.5)), orderBy };
+  return { orderUpTo, safetyStock, orderQty, cash: orderQty * input.unitCost, leadTimeRisk: risk(table, input.leadTimeWeeks, position), coverRisk: risk(table, weeks, position + orderQty), expectedLeft: Math.round(position + orderQty - quantile(table, weeks, 0.5)), orderBy };
 }

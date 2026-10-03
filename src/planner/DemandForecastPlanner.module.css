@@ -18,3 +18,15 @@
 @media(prefers-reduced-motion:reduce){.tourHighlight{scroll-behavior:auto}}
 @container (max-width:767px){.root:has(.tourOverlay) .drawerBackdrop{z-index:103;pointer-events:none;background:transparent}.root:has(.tourOverlay) .drawer{pointer-events:none;max-height:52vh}.root:has(.tourOverlay) .drawerMore{position:relative;pointer-events:none}.root:has(.tourOverlay) .drawerMore.tourHighlight{background:var(--_bg)}.root:has(.tourOverlay) .drawerHead,.root:has(.tourOverlay) .drawer .controls,.root:has(.tourOverlay) .drawerDone{display:none}.root:has(.tourOverlay) .drawer .drawerMore{margin-top:0}}
 @container (max-width:767px){.root:has(.tourOverlay) .mobileBar{z-index:103;pointer-events:none;background:transparent;border-color:transparent}.root:has(.tourOverlay) .mobileBar button{visibility:hidden}.root:has(.tourOverlay) .mobileBar button.tourHighlight{visibility:visible;background:var(--_bg)}.root:has(.tourOverlay) .mobileBar:has(.tourHighlight){padding-bottom:12px}.root:has(.tourOverlay) .desktopTourTarget{outline:none;box-shadow:none!important}.root:has(.tourOverlay) .tourDialog{bottom:82px}}
+.legend .legendStockout,.legend .legendPromo{width:8px;height:8px;border-radius:50%}
+.legend .legendStockout{background:var(--_warning)}
+.legend .legendPromo{background:var(--_compare)}
+.outcome{margin-top:16px;border-top:1px solid var(--_border);padding-top:14px}
+.outcome h3{margin:0 0 10px;font-family:var(--dfp-heading-font,'Sora',sans-serif);font-size:14px;font-weight:600}
+.outcomeGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.outcomeCard{border:1px solid var(--_border);border-radius:var(--_radius);padding:12px 14px;background:var(--_surface)}
+.outcomeCard>span{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--_muted)}
+.outcomeCard dl{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:8px 0 0;font-size:11px}
+.outcomeCard dt{color:var(--_muted)}
+.outcomeCard dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+@container (max-width:767px){.outcomeGrid{grid-template-columns:1fr}}
