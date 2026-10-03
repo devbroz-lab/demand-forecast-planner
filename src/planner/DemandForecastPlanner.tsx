@@ -33,6 +33,10 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,analyti
  const [error,setError] = useState(''); const [productError,setProductError] = useState('');
  const [loading,setLoading] = useState(true); const [productLoading,setProductLoading] = useState(false);
  const [drawer,setDrawer] = useState(false);
+ const [tourStep,setTourStep] = useState<number|null>(null);
+ const [tourStarted,setTourStarted] = useState(false);
+ const tourDialog=useRef<HTMLDivElement>(null);
+ const tourTrigger=useRef<HTMLButtonElement>(null);
  const [retryKey,setRetryKey] = useState(0); const [skuRetry,setSkuRetry] = useState(0);
  const emit = (event:Event) => onEvent?.(event);
  useEffect(()=>{emit({name:'demo_opened'});},[]);
@@ -48,6 +52,21 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,analyti
  const chooseCategory=(category:string)=>{change('category',category);const next=shell?.products.products.find(p=>category==='all'||p.category===category);if(next){change('sku',next.sku_id);emit({name:'sku_selected',skuId:next.sku_id});}};
  const chooseSku=(sku:string)=>{change('sku',sku);emit({name:'sku_selected',skuId:sku});};
  const chooseTab=(tab:Tab)=>{change('tab',tab);emit({name:'tab_opened',tab});};
+ const tourSteps=[
+  {id:'selection',title:'Choose a product',body:'Switch categories and products to inspect a different demand pattern and inventory position.'},
+  {id:'metrics',title:'Read the key measures',body:'The recommendation, cash commitment, current stockout risk and safety stock update for the selected product.'},
+  {id:'forecast',title:'Explore the forecast',body:'Compare historical sales with the most likely demand and its uncertainty range. Change the horizon or switch to the data table.'},
+  {id:'replenishment',title:'Examine replenishment',body:'See the calculated quantity, latest ordering date and the stock position behind the recommendation.'},
+  {id:'scenarios',title:'Test a scenario',body:'Change service level, supplier delay, promotion or available stock to see how the decision responds.'},
+  {id:'drivers',title:'Trace demand drivers',body:'Read the explanation and compare the estimated contribution of trend, seasonality and events.'},
+  {id:'replay',title:'Revisit a past forecast',body:'Move the timeline to compare an earlier forecast with the demand that followed.'},
+  {id:'impact',title:'Compare outcomes',body:'Review fill rate, inventory value, lost margin and imbalance cost against the simple baseline.'},
+ ] as const;
+ const closeTour=()=>{setTourStep(null);tourTrigger.current?.focus();};
+ useEffect(()=>{if(!loading && shell && skuData && !tourStarted){setTourStarted(true);setTourStep(0);}},[loading,shell,skuData,tourStarted]);
+ useEffect(()=>{if(tourStep===null)return;const target=document.querySelector(`[data-tour-target="${tourSteps[tourStep]?.id}"]`);target?.scrollIntoView({behavior:'smooth',block:'center'});const timer=window.setTimeout(()=>tourDialog.current?.focus(),180);return()=>window.clearTimeout(timer);},[tourStep]);
+ useEffect(()=>{if(tourStep===null)return;const onKey=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();closeTour();}if(e.key==='Tab'){const buttons=tourDialog.current?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');if(!buttons?.length)return;const first=buttons[0],last=buttons[buttons.length-1];if(e.shiftKey && (document.activeElement===first || document.activeElement===tourDialog.current)){e.preventDefault();last?.focus();}else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}}};document.addEventListener('keydown',onKey);return()=>document.removeEventListener('keydown',onKey);},[tourStep]);
+ const highlight=(id:string)=>tourStep!==null&&tourSteps[tourStep]?.id===id?s['tourHighlight']:'';
  const cta=<Button asChild className={s['cta']}><a href={ctaHref} onClick={()=>emit({name:'cta_clicked'})}>{t.cta}<ArrowUpRight size={16}/></a></Button>;
  const chartData=useMemo(()=>{
   if(!skuData||!origin||!forecast)return [];
@@ -100,7 +119,7 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,analyti
        <section data-tour-target="metrics" className={`${s['metricGrid']} ${highlight('metrics')}`} aria-label="Planning measures">
         <div className={s['metric']}><span>Recommended quantity</span><strong>{units(result?.orderQty??0)} <small>units</small></strong><p>{orderTiming}</p></div>
         <div className={s['metric']}><span>Cash commitment</span><strong>{shortMoney(result?.cashInr??0)}</strong><p>at {money(product?.unit_cost_inr??0)} / unit</p></div>
-        <div className={s['metric']}><span>Risk before arrival</span><strong>{result?riskLabel(result.leadTimeRisk):'—'}</strong><p>{result?`${Math.round(result.leadTimeRisk*100)}% probability`:'—'}</p></div>
+        <div className={s['metric']}><span>Risk before arrival</span><strong>{result?riskLabel(result.leadTimeRisk):'—'}</strong><p>Stockout probability</p></div>
         <div className={s['metric']}><span>Safety stock</span><strong>{units(result?.safetyStock??0)} <small>units</small></strong><p>{Math.round(state.service*100)}% service target</p></div>
        </section>
        <section data-tour-target="forecast" className={`${s['forecastSection']} ${highlight('forecast')}`}><div className={s['panelTop']}><div><span className={s['sectionIndex']}>DEMAND SIGNAL</span><h2>{t.forecast}</h2><p>Observed sales and probabilistic weekly outlook</p></div><div className={s['viewSwitch']}><Button variant="ghost" className={state.view==='chart'?s['selected']:''} onClick={()=>change('view','chart')}>Chart</Button><Button variant="ghost" className={state.view==='table'?s['selected']:''} onClick={()=>change('view','table')}>Table</Button></div></div>
