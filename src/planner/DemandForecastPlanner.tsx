@@ -81,6 +81,7 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,strings
   const timer=window.setTimeout(()=>{
    const target=document.querySelector<HTMLElement>(targetSelector);
    if(!isMobile)target?.scrollIntoView({behavior:'smooth',block:'center'});
+   else if(id==='forecast'&&target)window.scrollTo({top:window.scrollY+target.getBoundingClientRect().top+56,behavior:'smooth'});
    else if(id!=='selection'&&id!=='scenarios')target?.scrollIntoView({behavior:'smooth',block:id==='impact'?'end':'start'});
    tourDialog.current?.focus();
    placeDialog();
