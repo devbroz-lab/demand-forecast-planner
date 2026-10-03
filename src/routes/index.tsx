@@ -9,5 +9,5 @@ export const Route = createFileRoute('/')({
   { property: 'og:type', content: 'website' },
   { name: 'twitter:card', content: 'summary_large_image' }
  ] }),
- component: () => <DemandForecastPlanner dataBaseUrl="/demo-data/" ctaHref="#contact" />,
+ component: () => <DemandForecastPlanner dataBaseUrl="/demo-data/" ctaHref="https://www.devbroz.com/#contact" />,
 });
