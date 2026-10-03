@@ -33,7 +33,7 @@
 /* The shade and guide must be separate stacking peers of the highlighted content. */
 .tourOverlay{display:contents}
 .tourShade{position:fixed;inset:0;z-index:101}
-.tourDialog{z-index:110;max-height:calc(100dvh - 32px);overflow-y:auto}
+.tourDialog{z-index:110;width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto}
 .tourDialogTop{top:16px;bottom:auto}
 .tourDialogLeft{left:24px;right:auto}
 .root:has(.tourOverlay) .footer{padding-bottom:320px}
