@@ -8,3 +8,4 @@
 - Keep planner domain math in pure TypeScript under `src/planner/core` so UI changes cannot alter calculations and tests can run without React.
 - Load versioned static demo JSON through `src/planner/data` rather than persisting visitor selections, because the demo is intentionally private and backend-free.
 - Scope the reusable planner styling with CSS Modules and public `--dfp-*` variables so a host site can theme it without style leakage.
+- Keep the guided tour in ephemeral component state and point its steps at dashboard sections, so each new visitor sees the walkthrough without storing visitor state.
