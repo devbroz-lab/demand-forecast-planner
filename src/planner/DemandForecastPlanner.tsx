@@ -62,7 +62,7 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,strings
   const id=tourSteps[tourStep]?.id;
   setDrawer(false);
   const targetSelector=isMobile&&(id==='selection'||id==='scenarios')?'[data-tour-target="mobile-controls"]':`[data-tour-target="${id}"]`;
-  const placeDialog=()=>{
+  const placeDialog=(adjustScroll=false)=>{
    const target=document.querySelector<HTMLElement>(targetSelector)?.getBoundingClientRect();
    const dialog=tourDialog.current?.getBoundingClientRect();
    if(!target||!dialog)return;
@@ -76,7 +76,13 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,strings
     return Math.max(0,Math.min(left+width,target.right)-Math.max(left,target.left)) *
      Math.max(0,Math.min(top+height,target.bottom)-Math.max(top,target.top));
    };
-   setTourPlacement(options.reduce((best,option)=>overlap(option)<overlap(best)?option:best,options[0]));
+   const placement=options.reduce((best,option)=>overlap(option)<overlap(best)?option:best,options[0]);
+   setTourPlacement(placement);
+   if(adjustScroll && overlap(placement)>0){
+    const top=placement.startsWith('top')?gutter:window.innerHeight-bottomGutter-height;
+    const delta=placement.startsWith('top')?target.top-(top+height+16):target.bottom-(top-16);
+    window.scrollBy({top:delta,behavior:'smooth'});
+   }
   };
   const timer=window.setTimeout(()=>{
    const target=document.querySelector<HTMLElement>(targetSelector);
@@ -84,10 +90,11 @@ export function DemandForecastPlanner({dataBaseUrl,ctaHref,theme,onEvent,strings
    tourDialog.current?.focus();
    placeDialog();
   },180);
-  const settled=window.setTimeout(placeDialog,650);
-  window.addEventListener('scroll',placeDialog,{passive:true});
-  window.addEventListener('resize',placeDialog);
-  return()=>{window.clearTimeout(timer);window.clearTimeout(settled);window.removeEventListener('scroll',placeDialog);window.removeEventListener('resize',placeDialog)};
+  const settled=window.setTimeout(()=>placeDialog(true),650);
+  const reposition=()=>placeDialog();
+  window.addEventListener('scroll',reposition,{passive:true});
+  window.addEventListener('resize',reposition);
+  return()=>{window.clearTimeout(timer);window.clearTimeout(settled);window.removeEventListener('scroll',reposition);window.removeEventListener('resize',reposition)};
  },[tourStep,tourSteps]);
  useEffect(()=>{if(tourStep===null)return;const onKey=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();closeTour();}if(e.key==='Tab'){const buttons=tourDialog.current?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');if(!buttons?.length)return;const first=buttons[0],last=buttons[buttons.length-1];if(e.shiftKey && (document.activeElement===first || document.activeElement===tourDialog.current)){e.preventDefault();last?.focus();}else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}}};document.addEventListener('keydown',onKey);return()=>document.removeEventListener('keydown',onKey);},[tourStep]);
  const highlight=(id:string)=>tourStep!==null&&tourSteps[tourStep]?.id===id?s['tourHighlight']:'';
